@@ -1,0 +1,64 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   server_bonus.c                                     :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: atakeddi <atakeddi@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2022/02/20 15:31:57 by atakeddi          #+#    #+#             */
+/*   Updated: 2022/03/15 19:12:40 by atakeddi         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "minitalk_bonus.h"
+
+void	print(char c, int pid)
+{
+	ft_putchar(c);
+	if (!c)
+		kill(pid, SIGUSR1);
+}
+
+void	sigusr_handler(int signum, siginfo_t *info, void *cont)
+{
+	static char	c = 0xFF;
+	static int	bit = 0;
+	static int	pid;
+
+	(void) cont;
+	if (info->si_pid != pid)
+	{
+		pid = info->si_pid;
+		bit = 0;
+		c = 0xff;
+	}
+	if (bit <= 8)
+	{
+		if (signum == SIGUSR2)
+			c |= 0x80 >> bit;
+		else if (signum == SIGUSR1)
+			c ^= 0x80 >> bit;
+		bit++;
+	}
+	if (bit == 8)
+	{
+		print(c, info->si_pid);
+		c = 0xFF;
+		bit = 0;
+	}
+}
+
+int	main(void)
+{
+	struct sigaction	sa;
+
+	sa.sa_sigaction = sigusr_handler;
+	sa.sa_flags = SA_SIGINFO;
+	sigaction(SIGUSR1, &sa, NULL);
+	sigaction(SIGUSR2, &sa, NULL);
+	ft_putstr("PID : ");
+	ft_putnbr(getpid());
+	ft_putchar('\n');
+	while (1)
+		pause();
+}
